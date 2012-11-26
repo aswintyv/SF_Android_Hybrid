@@ -62,11 +62,67 @@ function regLinkClickHandlers() {
     });
                            
     $j('#link_logout').click(function() {
-             logToConsole("link_logout clicked");
-             var sfOAuthPlugin = cordova.require("salesforce/plugin/oauth");
-             sfOAuthPlugin.logout();
-             });
+    	logToConsole("link_logout clicked");
+    	var sfOAuthPlugin = cordova.require("salesforce/plugin/oauth");
+    	sfOAuthPlugin.logout();
+    });
+   
+    $j('#soup_download').click(function() {
+    	logToConsole("init soup first..");
+    	var indexesAlbums = [
+    	                     {path:"firstName",type:"string"},
+    	                     {path:"lastName",type:"string"},
+    	                     {path:"email",type:"string"},
+    	                     {path:"phone",type:"string"},
+    	                     {path:"Id",type:"string"}
+    	                     ];
+    	navigator.smartstore.registerSoup('ContactStore',
+    			indexesAlbums,
+    			function(){
+    		forcetkClient.query("SELECT Id,FirstName, LastName, Email, Phone FROM Contact", onContactQuery,  function(){logToConsole("boing boing....");})
+    	},
+    	function(){logToConsole("boing boing....");});
+    	
+    });
+   
+    $j('#soup_query').click(function() {
+         logToConsole("init soup first..");
+         var querySpec = navigator.smartstore.buildAllQuerySpec("Id", null, 20);
+ 	     navigator.smartstore.querySoup('ContactStore',querySpec,
+        		function(cursor) {
+ 	    	 		displayContacts(cursor);
+ 	    	 	},
+ 	    	 	function(e){logToConsole("boing boing...."+JSON.stringify(e));}
+ 	    	 );
+     });
 }
+
+function displayContacts(data){
+	logToConsole("displayiing contacts...");
+	//logToConsole(JSON.stringify(data));
+	var records = data['currentPageOrderedEntries'];
+	$j("#div_output").html("");
+	for(var i = 0; i < records.length; i++){
+		var table = "<table>" +
+				"<tr><th>Field</th><th>Value</th></tr>" +
+				"<tr><td>First Name</td><td>"+records[i]['FirstName']+"</td></tr>" +
+				"<tr><td>Last Name</td><td>"+records[i]['LastName']+"</td></tr>" +
+				"<tr><td>Email</td><td><a href=\"mailto:"+records[i]['Email']+"\">"+records[i]['Email']+"</a></td></tr>" +
+				"<tr><td>Email</td><td><a href=\"tel:"+records[i]['Phone']+"\">"+records[i]['Phone']+"</a></td></tr>" +
+				"</table>";
+		$j("#div_output").append(table);
+	}
+	
+}
+function onContactQuery(data){
+	logToConsole("Soup registerd....");
+	 navigator.smartstore.upsertSoupEntries('ContactStore',data['records'],
+			 function(){logToConsole("downloaded all contacts");$j("#div_output").html('All contacts saved to SmartStore');},
+			 function(){logToConsole("boing boing....");}
+	 );
+}
+
+
 
 function getFirstRecord(sObject){
 	forcetkClient.describe(sObject, 
